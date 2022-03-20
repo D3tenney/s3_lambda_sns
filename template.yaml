@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Tries out s3-lambda-sns.
+
+Parameters:
+  SubscriptionEmail:
+    Type: String
+
+Resources:
+  Topic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-topic"
+
+  TopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref Topic
+      Endpoint: !Ref SubscriptionEmail
+      Protocol: email
+      FilterPolicy:
+        file_type:
+          - A
+
+  TopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref Topic
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sns:Publish
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "aws.SourceArn": !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}-function"
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${AWS::StackName}-bucket-${AWS::AccountId}" # AccountId added here so bucket name will be universally unique
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ParserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: "Parses Object Key, sends result to SNS topic w/ attributes"
+      FunctionName: !Sub "${AWS::StackName}-function"
+      CodeUri: parser_function/
+      Handler: handler.event_handler
+      MemorySize: 128
+      Runtime: python3.8
+      Timeout: 15
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          TOPIC_ARN: !Ref Topic
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt Topic.TopicName
+
+Outputs:
+  BucketName:
+    Description: Bucket created by script
+    Value: !Ref Bucket

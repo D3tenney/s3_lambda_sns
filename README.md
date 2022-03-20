@@ -112,6 +112,70 @@ aws cloudformation delete-stack \
     --region us-east-1
 ```
 
+## Extension
+This architecture could be used to allow messages from multiple buckets to be
+passed to a single lambda for parsing and on to a single topic for distribution.
+These buckets could be in a different stack from the lambda and topic.
+
+For this purpose, you would deploy the function, s3permission, topic,
+and topic policy in one stack, while exporting the function ARN to be
+consumed by as many stacks as had buckets needing to send messages. So the
+`Outputs` portion of the template would look like:
+```
+Outputs:
+  FunctionArn:
+    Description: "Arn of s3 notification parser function"
+    Value: !GetAtt ParserFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-FunctionArn"
+```
+
+And then a whole separate stack (or two or ten, etc...) with buckets might look
+like:
+```
+Parameters:
+  FunctionStackName:
+    Type: String
+    Default: s3-notification-parser-function-sns
+
+Resources:
+  BucketA:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${AWS::StackName}-bucket-a-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function:
+              Fn::ImportValue:
+                !Sub "${FunctionStackName}-FunctionArn"
+```
+
+Many buckets can easily send messages to a single function as long
+as their names share a common pattern. The `SourceArn` property of the
+AWS::Lambda::Permission resource uses a
+[StringLike operator](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-permission.html) to limit which ARNs can invoke the lambda.
+Thus, a pattern can be established, as in the template here, where any bucket
+belonging to the same account with an ARN
+_like_ `"arn:aws:s3:::${AWS::StackName}-bucket*"` can send a notification and
+invoke the lambda.
+
+Thus, a great many buckets could use the same function and topic easily, which
+could prevent having duplicate lambdas for each bucket in a project, and
+the `create_message_attrs` function could be easily altered to parse
+bucket name from the message and add it as an attribute, so downstream
+services could filter for just the messages they want from certain buckets.
+
 ## References
 A reply on [this reddit post](https://www.reddit.com/r/aws/comments/spt2o6/filtering_sqs_subscription_to_sns_topic_for/)
 suggested using a lambda to parse the S3 notification. It seems that the

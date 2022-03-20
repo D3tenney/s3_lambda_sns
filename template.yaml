@@ -52,6 +52,10 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt ParserFunction.Arn
 
   ParserFunction:
     Type: AWS::Serverless::Function
@@ -68,15 +72,18 @@ Resources:
       Environment:
         Variables:
           TOPIC_ARN: !Ref Topic
-      Events:
-        S3Event:
-          Type: S3
-          Properties:
-            Bucket: !Ref Bucket
-            Events: s3:ObjectCreated:*
       Policies:
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt Topic.TopicName
+
+  S3Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ParserFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:s3:::${AWS::StackName}-bucket*"
 
 Outputs:
   BucketName:

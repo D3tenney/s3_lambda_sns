@@ -4,6 +4,7 @@ from urllib import parse
 def create_message_attrs(event):
     message = event['Records'][0]
 
+    # handle other s3 actions, such as test events
     if 'ObjectCreated' not in message['eventName']:
         return None
 

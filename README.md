@@ -182,3 +182,9 @@ suggested using a lambda to parse the S3 notification. It seems that the
 use case there was to have lambda look up in DynamoDB where the message should
 go or what attributes should be attached to it. The solution here is a little
 different, but I got the idea to use Lambda from `u/Cwiddy`.
+
+Invoking the lambda with messages from S3 was based on a
+[Medium Article](https://medium.com/@owentar/how-to-setup-s3-bucket-lambda-notifications-in-cloudformation-without-errors-f7250a6a9460) by Hernán Carrizo. This is more extensible than creating the
+relationship using the `Events` property of the AWS::Serverless::Function
+resource, since that requires the bucket name and that the bucket be created
+in the same template, as documented [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-s3.html).

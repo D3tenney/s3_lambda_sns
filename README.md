@@ -4,15 +4,15 @@ attributes to an SNS notification.
 
 ## Introduction
 I want to make bucket notifications available to downstream services,
-but not all services (mostly SQS Queues) will want all notifications.
+but not all services will want all notifications.
 
 I could:
 - Send all notifications to all downstream queues/services and have the
 service do the filtering.
 - Have a separate SNS Topic for each type of file. I could have
-separate notification configurations for each prefix, so each topic would only
+separate notification configurations for each s3 prefix, so each topic would only
 have one type of message. Downstream services could just subscribe to whichever
-topic they needed.
+topic(s) they needed.
 - Pass all of the notifications to one SNS topic, then filter the
 subscriptions, so downstream services only receive relevant messages.
 

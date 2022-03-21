@@ -130,13 +130,14 @@ Outputs:
       Name: !Sub "${AWS::StackName}-FunctionArn"
 ```
 
-And then a whole separate stack (or two or ten, etc...) with buckets might look
-like:
+And then a whole separate stack (or two or ten, etc...) with buckets, which
+just need to be able to reference the stack for the function and topic,
+might look like:
 ```
 Parameters:
   FunctionStackName:
     Type: String
-    Default: s3-notification-parser-function-sns
+    Default: s3-lambda-sns-example-function-sns
 
 Resources:
   BucketA:

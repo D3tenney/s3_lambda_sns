@@ -9,8 +9,13 @@ sns_client = boto3.client('sns')
 
 
 def event_handler(event, context):
+    message = event['Records'][0]
 
-    msg_attrs = create_message_attrs(event)
+    # handle other s3 actions, such as test events
+    if 'ObjectCreated' not in message['eventName']:
+        return None
+
+    msg_attrs = create_message_attrs(message)
 
     sns_client.publish(TopicArn=TOPIC_ARN,
                        Message=json.dumps(event),

@@ -35,7 +35,7 @@ Resources:
             Action: sns:Publish
             Resource: "*"
             Condition:
-              ArnLike:
+              ArnEquals:
                 "aws.SourceArn": !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}-function"
 
   Bucket:

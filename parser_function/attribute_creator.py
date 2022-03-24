@@ -1,13 +1,7 @@
 from urllib import parse
 
 
-def create_message_attrs(event):
-    message = event['Records'][0]
-
-    # handle other s3 actions, such as test events
-    if 'ObjectCreated' not in message['eventName']:
-        return None
-
+def create_message_attrs(message):
     object_key = parse.unquote(message["s3"]["object"]["key"])
     key_parts = object_key.split('/')
 

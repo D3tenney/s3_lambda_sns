@@ -177,6 +177,34 @@ the `create_message_attrs` function could be easily altered to parse
 bucket name from the message and add it as an attribute, so downstream
 services could filter for just the messages they want from certain buckets.
 
+## Testing
+The lambda has a single, simple test to make sure `create_message_attrs` is
+returning as expected. To run the test:
+```bash
+# change to the function directory
+cd ./parser_function
+# create a virtual environment for the test
+python3 -m venv venv
+# activate the virtual environment
+. ./venv/bin/activate
+# upgrade pip
+pip install --upgrade pip
+# install packages required for testing (coverage, pylint, pytest)
+pip install -r requirements_dev.txt
+# run test
+coverage run -m pytest
+```
+
+And then, to clean up the directory prior to deployment:
+```bash
+# deactivate the virtual environment
+deactivate
+# remove files/directories added for testing
+rm .coverage
+rm -rf ./__pycache__
+rm -rf ./.pytest_cache
+rm -rf ./venv/
+```
 ## References
 A reply on [this reddit post](https://www.reddit.com/r/aws/comments/spt2o6/filtering_sqs_subscription_to_sns_topic_for/)
 suggested using a lambda to parse the S3 notification. It seems that the
@@ -189,3 +217,5 @@ Invoking the lambda with messages from S3 was based on a
 relationship using the `Events` property of the AWS::Serverless::Function
 resource, since that requires the bucket name and that the bucket be created
 in the same template, as documented [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-s3.html).
+
+The lambda testing is based on [this](https://hands-on.cloud/how-to-test-python-lambda-functions/) article.
